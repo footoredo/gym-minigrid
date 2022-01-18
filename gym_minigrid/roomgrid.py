@@ -72,6 +72,7 @@ class RoomGrid(MiniGridEnv):
         num_rows=3,
         num_cols=3,
         max_steps=100,
+        hide_carrying=False,
         seed=0,
         agent_view_size=7
     ):
@@ -94,6 +95,7 @@ class RoomGrid(MiniGridEnv):
             height=height,
             max_steps=max_steps,
             see_through_walls=False,
+            hide_carrying=hide_carrying,
             seed=seed,
             agent_view_size=agent_view_size
         )

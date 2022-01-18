@@ -1,6 +1,7 @@
 import math
 import operator
 from functools import reduce
+import heapq
 
 import numpy as np
 import gym
@@ -28,6 +29,30 @@ class ReseedWrapper(gym.core.Wrapper):
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
         return obs, reward, done, info
+
+class DelayReward(gym.core.Wrapper):
+
+    def __init__(self, env, delay=0):
+        super().__init__(env)
+        self.schedule = []
+        self.step_count = 0
+        self.delay = delay
+
+    def step(self, action):
+        obs, _reward, done, info = self.env.step(action)
+        if abs(_reward) > 0:
+            heapq.heappush(self.schedule, (self.step_count + self.delay, _reward))
+        reward = 0
+        while len(self.schedule) > 0 and self.schedule[0][0] == self.step_count:
+            _, r = heapq.heappop(self.schedule)
+            reward += r
+        self.step_count += 1
+        return obs, reward, done, info
+
+    def reset(self, **kwargs):
+        self.schedule = []
+        self.step_count = 0
+        return self.env.reset(**kwargs)
 
 class ActionBonus(gym.core.Wrapper):
     """
@@ -212,10 +237,15 @@ class RGBImgPartialObsWrapper(gym.core.ObservationWrapper):
             tile_size=self.tile_size
         )
 
-        return {
-            'mission': obs['mission'],
+        new_obs = {
             'image': rgb_img_partial
         }
+
+        for k, v in obs.items():
+            if k != 'image':
+                new_obs[k] = v
+
+        return new_obs
 
 class FullyObsWrapper(gym.core.ObservationWrapper):
     """

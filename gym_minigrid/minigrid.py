@@ -649,8 +649,11 @@ class MiniGridEnv(gym.Env):
         height=None,
         max_steps=100,
         see_through_walls=False,
+        hide_carrying=False,
         seed=1337,
-        agent_view_size=7
+        agent_view_size=7,
+        finish_delay=0,
+        extra_obs_spaces=dict()
     ):
         # Can't set both grid_size and width/height
         if grid_size:
@@ -678,8 +681,11 @@ class MiniGridEnv(gym.Env):
             dtype='uint8'
         )
         self.observation_space = spaces.Dict({
-            'image': self.observation_space
+            'image': self.observation_space,
+            **extra_obs_spaces
         })
+
+        print("observation space:", self.observation_space)
 
         # Range of possible rewards
         self.reward_range = (0, 1)
@@ -692,6 +698,8 @@ class MiniGridEnv(gym.Env):
         self.height = height
         self.max_steps = max_steps
         self.see_through_walls = see_through_walls
+        self.hide_carrying = hide_carrying
+        self.finish_delay = finish_delay
 
         # Current position and direction of the agent
         self.agent_pos = None
@@ -726,6 +734,7 @@ class MiniGridEnv(gym.Env):
 
         # Step count since episode start
         self.step_count = 0
+        self.done_countdown = -1
 
         # Return first observation
         obs = self.gen_obs()
@@ -1160,6 +1169,13 @@ class MiniGridEnv(gym.Env):
 
         obs = self.gen_obs()
 
+        if self.done_countdown < 0 and done:
+            self.done_countdown = self.finish_delay
+
+        done = self.done_countdown == 0
+        if self.done_countdown > 0:
+            self.done_countdown -= 1
+
         return obs, reward, done, {}
 
     def gen_obs_grid(self):
@@ -1187,7 +1203,7 @@ class MiniGridEnv(gym.Env):
         # We do this by placing the carried object at the agent's position
         # in the agent's partially observable view
         agent_pos = grid.width // 2, grid.height - 1
-        if self.carrying:
+        if self.carrying and not self.hide_carrying:
             grid.set(*agent_pos, self.carrying)
         else:
             grid.set(*agent_pos, None)

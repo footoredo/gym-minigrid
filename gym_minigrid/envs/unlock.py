@@ -7,13 +7,13 @@ class Unlock(RoomGrid):
     Unlock a door
     """
 
-    def __init__(self, seed=None):
-        room_size = 6
+    def __init__(self, seed=None, room_size=6, max_steps=None, hide_key=False):
         super().__init__(
             num_rows=1,
             num_cols=2,
             room_size=room_size,
-            max_steps=8*room_size**2,
+            max_steps=8*room_size**2 if max_steps is None else max_steps,
+            hide_carrying=hide_key,
             seed=seed
         )
 
