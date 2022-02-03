@@ -7,8 +7,9 @@ class UnlockEnhanced(RoomGrid):
     Unlock a door
     """
 
-    def __init__(self, seed=None, room_size=16, num_keys=10, max_steps=None, hide_key=False):
+    def __init__(self, seed=None, room_size=16, num_keys=10, max_steps=None, hide_key=False, reward_decay=True):
         self.num_keys = num_keys
+        self.reward_decay = reward_decay
         super().__init__(
             num_rows=1,
             num_cols=2,
@@ -42,11 +43,11 @@ class UnlockEnhanced(RoomGrid):
         if not self.picked_key:
             if self.carrying is not None:
                 self.picked_key = True
-                reward += self._reward()
+                reward += self._reward() if self.reward_decay else 1.
 
         if action == self.actions.toggle:
             if self.door.is_open:
-                reward = self._reward()
+                reward = self._reward() if self.reward_decay else 1.
                 done = True
 
         return obs, reward, done, info

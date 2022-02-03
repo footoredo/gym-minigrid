@@ -8,6 +8,13 @@ import gym
 from gym import error, spaces, utils
 from .minigrid import OBJECT_TO_IDX, COLOR_TO_IDX, STATE_TO_IDX, Goal
 
+try:
+    import cv2  # pytype:disable=import-error
+
+    cv2.ocl.setUseOpenCL(False)
+except ImportError:
+    cv2 = None
+
 class ReseedWrapper(gym.core.Wrapper):
     """
     Wrapper to always regenerate an environment with the same set of seeds.
@@ -122,6 +129,40 @@ class StateBonus(gym.core.Wrapper):
 
     def reset(self, **kwargs):
         return self.env.reset(**kwargs)
+
+class WarpFrame(gym.core.ObservationWrapper):
+    """
+    Convert to grayscale and warp frames to 84x84 (default)
+    as done in the Nature paper and later work.
+
+    :param env: the environment
+    :param width:
+    :param height:
+    """
+
+    def __init__(self, env: gym.Env, width: int = 84, height: int = 84, grayscale=False):
+        gym.ObservationWrapper.__init__(self, env)
+        self.width = width
+        self.height = height
+        self.grayscale = grayscale
+        self.observation_space.spaces['image'] = spaces.Box(
+            low=0, high=255, shape=(self.height, self.width, 1 if self.grayscale else 3), dtype=env.observation_space.spaces['image'].dtype
+        )
+
+    def observation(self, obs: dict) -> np.ndarray:
+        """
+        returns the current observation from a frame
+
+        :param frame: environment frame
+        :return: the observation
+        """
+        frame = obs['image']
+        if self.grayscale:
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)[:, :, None]
+        frame = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_AREA)
+        new_obs = { k: v for k, v in obs.items() if k != 'image' }
+        new_obs['image'] = frame
+        return new_obs
 
 class ImgObsWrapper(gym.core.ObservationWrapper):
     """
@@ -411,3 +452,14 @@ class SymbolicObsWrapper(gym.core.ObservationWrapper):
         grid = np.transpose(grid, (1, 2, 0))
         obs['image'] = grid
         return obs
+
+class TimeLimitMask(gym.Wrapper):
+    def step(self, action):
+        obs, rew, done, info = self.env.step(action)
+        if done and self.env.max_steps == self.env.step_count:
+            info['bad_transition'] = True
+
+        return obs, rew, done, info
+
+    def reset(self, **kwargs):
+        return self.env.reset(**kwargs)
