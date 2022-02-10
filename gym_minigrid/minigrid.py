@@ -685,7 +685,7 @@ class MiniGridEnv(gym.Env):
             **extra_obs_spaces
         })
 
-        print("observation space:", self.observation_space)
+        # print("observation space:", self.observation_space)
 
         # Range of possible rewards
         self.reward_range = (0, 1)
