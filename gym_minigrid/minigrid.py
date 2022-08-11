@@ -88,6 +88,8 @@ class WorldObj:
         # Current position of the object
         self.cur_pos = None
 
+        self.id = None
+
     def can_overlap(self):
         """Can the agent overlap with this?"""
         return False
@@ -653,7 +655,8 @@ class MiniGridEnv(gym.Env):
         seed=1337,
         agent_view_size=7,
         finish_delay=0,
-        extra_obs_spaces=dict()
+        extra_obs_spaces=dict(),
+        achievement_reward=False
     ):
         # Can't set both grid_size and width/height
         if grid_size:
@@ -700,6 +703,7 @@ class MiniGridEnv(gym.Env):
         self.see_through_walls = see_through_walls
         self.hide_carrying = hide_carrying
         self.finish_delay = finish_delay
+        self.achievement_reward = achievement_reward
 
         # Current position and direction of the agent
         self.agent_pos = None
@@ -718,6 +722,10 @@ class MiniGridEnv(gym.Env):
 
         # Item picked up, being carried, initially nothing
         self.carrying = None
+
+        self.id_count = dict()
+        self.picked_up_objs = set()
+        self.toggled_objs = set()
 
         # Generate a new random grid at the start of each episode
         # To keep the same grid for each episode, call env.seed() with
@@ -1108,6 +1116,8 @@ class MiniGridEnv(gym.Env):
     def step(self, action):
         self.step_count += 1
 
+        step_events = []
+
         reward = 0
         done = False
 
@@ -1140,6 +1150,9 @@ class MiniGridEnv(gym.Env):
         # Pick up an object
         elif action == self.actions.pickup:
             if fwd_cell and fwd_cell.can_pickup():
+                if fwd_cell.id is not None and fwd_cell.id not in self.picked_up_objs:
+                    self.picked_up_objs.add(fwd_cell.id)
+                    step_events.append(f'pickup-{fwd_cell.id}')
                 if self.carrying is None:
                     self.carrying = fwd_cell
                     self.carrying.cur_pos = np.array([-1, -1])
@@ -1155,7 +1168,10 @@ class MiniGridEnv(gym.Env):
         # Toggle/activate an object
         elif action == self.actions.toggle:
             if fwd_cell:
-                fwd_cell.toggle(self, fwd_pos)
+                if fwd_cell.toggle(self, fwd_pos):
+                    if fwd_cell.id is not None and fwd_cell.id not in self.toggled_objs:
+                        self.toggled_objs.add(fwd_cell.id)
+                        step_events.append(f'toggle-{fwd_cell.id}')
 
         # Done action (not used by default)
         elif action == self.actions.done:
@@ -1176,7 +1192,15 @@ class MiniGridEnv(gym.Env):
         if self.done_countdown > 0:
             self.done_countdown -= 1
 
-        return obs, reward, done, {}
+        if self.achievement_reward:
+            reward = len(step_events)
+
+        info = {}
+        info['step_events'] = step_events
+        info['picked_up_objs'] = list(self.picked_up_objs)
+        info['toggled_objs'] = list(self.toggled_objs)
+
+        return obs, reward, done, info
 
     def gen_obs_grid(self):
         """

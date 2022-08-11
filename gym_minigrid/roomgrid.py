@@ -74,7 +74,8 @@ class RoomGrid(MiniGridEnv):
         max_steps=100,
         hide_carrying=False,
         seed=0,
-        agent_view_size=7
+        agent_view_size=7,
+        **kwargs,
     ):
         assert room_size > 0
         assert room_size >= 3
@@ -97,7 +98,8 @@ class RoomGrid(MiniGridEnv):
             see_through_walls=False,
             hide_carrying=hide_carrying,
             seed=seed,
-            agent_view_size=agent_view_size
+            agent_view_size=agent_view_size,
+            **kwargs
         )
 
     def room_from_pos(self, x, y):
@@ -120,6 +122,9 @@ class RoomGrid(MiniGridEnv):
         return self.room_grid[j][i]
 
     def _gen_grid(self, width, height):
+        self.door_id_count = 0
+        self.obj_id_count = 0
+
         # Create the grid
         self.grid = Grid(width, height)
 
@@ -211,6 +216,9 @@ class RoomGrid(MiniGridEnv):
         elif kind == 'box':
             obj = Box(color)
 
+        obj.id = f"{obj.type}-{self.id_count.setdefault(obj.type, 0)}"
+        self.id_count[obj.type] += 1
+
         return self.place_in_room(i, j, obj)
 
     def add_door(self, i, j, door_idx=None, color=None, locked=None):
@@ -246,6 +254,9 @@ class RoomGrid(MiniGridEnv):
         neighbor = room.neighbors[door_idx]
         room.doors[door_idx] = door
         neighbor.doors[(door_idx+2) % 4] = door
+
+        door.id = f"{door.type}-{self.id_count.setdefault(door.type, 0)}"
+        self.id_count[door.type] += 1
 
         return door, pos
 
