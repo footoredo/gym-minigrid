@@ -20,3 +20,4 @@ from gym_minigrid.envs.lavagap import *
 from gym_minigrid.envs.dynamicobstacles import *
 from gym_minigrid.envs.distshift import *
 from gym_minigrid.envs.unlockenhanced import *
+from gym_minigrid.envs.distractions import *

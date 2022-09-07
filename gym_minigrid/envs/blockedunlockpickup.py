@@ -8,14 +8,15 @@ class BlockedUnlockPickup(RoomGrid):
     in another room
     """
 
-    def __init__(self, seed=None):
+    def __init__(self, seed=None, **kwargs):
         room_size = 6
         super().__init__(
             num_rows=1,
             num_cols=2,
             room_size=room_size,
             max_steps=16*room_size**2,
-            seed=seed
+            seed=seed,
+            **kwargs,
         )
 
     def _gen_grid(self, width, height):
@@ -26,8 +27,9 @@ class BlockedUnlockPickup(RoomGrid):
         # Make sure the two rooms are directly connected by a locked door
         door, pos = self.add_door(0, 0, 0, locked=True)
         # Block the door with a ball
-        color = self._rand_color()
-        self.grid.set(pos[0]-1, pos[1], Ball(color))
+        # color = self._rand_color()
+        # self.grid.set(pos[0]-1, pos[1], Ball(color))
+        self.place_obj_in_grid(pos[0]-1, pos[1], kind="ball")
         # Add a key to unlock the door
         self.add_object(0, 0, 'key', door.color)
 
@@ -41,7 +43,7 @@ class BlockedUnlockPickup(RoomGrid):
 
         if action == self.actions.pickup:
             if self.carrying and self.carrying == self.obj:
-                reward = self._reward()
+                # reward = self._reward()
                 done = True
 
         return obs, reward, done, info

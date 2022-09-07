@@ -196,11 +196,7 @@ class RoomGrid(MiniGridEnv):
 
         return obj, pos
 
-    def add_object(self, i, j, kind=None, color=None):
-        """
-        Add a new object to room (i, j)
-        """
-
+    def _gen_object(self, kind=None, color=None):
         if kind == None:
             kind = self._rand_elem(['key', 'ball', 'box'])
 
@@ -219,7 +215,25 @@ class RoomGrid(MiniGridEnv):
         obj.id = f"{obj.type}-{self.id_count.setdefault(obj.type, 0)}"
         self.id_count[obj.type] += 1
 
+        return obj
+
+    def add_object(self, i, j, kind=None, color=None):
+        """
+        Add a new object to room (i, j)
+        """
+
+        obj = self._gen_object(kind=kind, color=color)
+
         return self.place_in_room(i, j, obj)
+
+    def place_obj_in_grid(self, x, y, kind=None, color=None):
+        """
+        Place a new object to grid position (x, y)
+        """
+
+        obj = self._gen_object(kind=kind, color=color)
+
+        self.grid.set(x, y, obj)
 
     def add_door(self, i, j, door_idx=None, color=None, locked=None):
         """

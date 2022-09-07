@@ -55,7 +55,7 @@ class KeyCorridor(RoomGrid):
 
         if action == self.actions.pickup:
             if self.carrying and self.carrying == self.obj:
-                reward = self._reward()
+                # reward = self._reward()
                 done = True
 
         return obs, reward, done, info

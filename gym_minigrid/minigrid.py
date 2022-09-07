@@ -12,24 +12,36 @@ TILE_PIXELS = 32
 
 # Map of color names to RGB values
 COLORS = {
-    'red'   : np.array([255, 0, 0]),
-    'green' : np.array([0, 255, 0]),
-    'blue'  : np.array([0, 0, 255]),
-    'purple': np.array([112, 39, 195]),
-    'yellow': np.array([255, 255, 0]),
-    'grey'  : np.array([100, 100, 100])
+    'red'    : np.array([255, 0, 0]),
+    'green'  : np.array([0, 255, 0]),
+    'blue'   : np.array([0, 0, 255]),
+    'purple' : np.array([112, 39, 195]),
+    'yellow' : np.array([255, 255, 0]),
+    'grey'   : np.array([100, 100, 100]),
+    # new colors
+    'aqua'   : np.array([0, 255, 255]),
+    'magenta': np.array([255, 0, 255]),
+    'silver' : np.array([192, 192, 192]),
+    'maroon' : np.array([128, 0, 0]),
+    'olive'  : np.array([128, 128, 0]),
 }
 
 COLOR_NAMES = sorted(list(COLORS.keys()))
 
 # Used to map colors to integers
 COLOR_TO_IDX = {
-    'red'   : 0,
-    'green' : 1,
-    'blue'  : 2,
-    'purple': 3,
-    'yellow': 4,
-    'grey'  : 5
+    'red'    : 0,
+    'green'  : 1,
+    'blue'   : 2,
+    'purple' : 3,
+    'yellow' : 4,
+    'grey'   : 5,
+    # new colors
+    'aqua'   : 6,
+    'magenta': 7,
+    'silver' : 8,
+    'maroon' : 9,
+    'olive'  : 10
 }
 
 IDX_TO_COLOR = dict(zip(COLOR_TO_IDX.values(), COLOR_TO_IDX.keys()))
@@ -89,6 +101,14 @@ class WorldObj:
         self.cur_pos = None
 
         self.id = None
+        self._name = None
+
+    @property
+    def name(self):
+        if self._name is None:
+            return self.id
+        else:
+            return self._name
 
     def can_overlap(self):
         """Can the agent overlap with this?"""
@@ -667,6 +687,8 @@ class MiniGridEnv(gym.Env):
         # Action enumeration for this environment
         self.actions = MiniGridEnv.Actions
 
+        self.color_names = COLOR_NAMES
+
         # Actions are discrete integer values
         self.action_space = spaces.Discrete(len(self.actions))
 
@@ -1150,10 +1172,10 @@ class MiniGridEnv(gym.Env):
         # Pick up an object
         elif action == self.actions.pickup:
             if fwd_cell and fwd_cell.can_pickup():
-                if fwd_cell.id is not None and fwd_cell.id not in self.picked_up_objs:
-                    self.picked_up_objs.add(fwd_cell.id)
-                    step_events.append(f'pickup-{fwd_cell.id}')
                 if self.carrying is None:
+                    if fwd_cell.id is not None and fwd_cell.id not in self.picked_up_objs:
+                        self.picked_up_objs.add(fwd_cell.id)
+                        step_events.append(f'pickup-{fwd_cell.name}')
                     self.carrying = fwd_cell
                     self.carrying.cur_pos = np.array([-1, -1])
                     self.grid.set(*fwd_pos, None)
@@ -1171,7 +1193,7 @@ class MiniGridEnv(gym.Env):
                 if fwd_cell.toggle(self, fwd_pos):
                     if fwd_cell.id is not None and fwd_cell.id not in self.toggled_objs:
                         self.toggled_objs.add(fwd_cell.id)
-                        step_events.append(f'toggle-{fwd_cell.id}')
+                        step_events.append(f'toggle-{fwd_cell.name}')
 
         # Done action (not used by default)
         elif action == self.actions.done:
